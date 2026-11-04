@@ -8,7 +8,7 @@ The app is hosted with GitHub Pages and uses Supabase for authentication, data s
 
 ## Features in this starter
 
-- Email/password registration. Supabase sends its email confirmation link to the deployed app URL; accounts stay pending until an admin approves or rejects them, and pending accounts cannot read pool data.
+- Email/password registration. New accounts are immediately marked pending; an admin must approve them before they can read pool data.
 - League, playoff, and final stakes configured per season.
 - Fixture entry with India Standard Time; picks close 30 minutes before the scheduled start, enforced by Postgres.
 - Picks and live team counts are hidden from everyone, including the admin, before lock. Admin privileges do not bypass pick privacy.
@@ -53,7 +53,7 @@ The app is hosted with GitHub Pages and uses Supabase for authentication, data s
 
 1. Create a free project in Supabase and save its database password in your password manager.
 2. Open **SQL Editor**, paste all of `supabase/schema.sql`, and run it.
-3. In **Authentication → Providers**, enable Email, allow sign-ups, and keep email confirmation enabled. New users confirm their email, then sign in to see that approval is pending. Database policies keep pending accounts from reading pool data.
+3. In **Authentication → Providers**, enable Email, allow sign-ups, and turn **Confirm email** off. Registration creates a pending account without sending a confirmation email; pending users cannot read pool data. Supabase treats email addresses as confirmed when this option is off, so approve only people whose identity and email address you recognize.
 4. Copy the project URL and the **publishable key** (or legacy anon key) from **Project Settings → API**. The publishable/anon key is designed for browser use; database row-level policies protect the data. Never use the `service_role` key in frontend code.
 5. Edit `config.js` and replace both placeholder values. `config.js` is public in the deployed site. It must contain only the project URL and publishable/anon key.
 6. Publish the site, open its URL, and register your own account. If email confirmation is enabled, confirm the message before proceeding. In SQL Editor, promote your profile to the first approved admin. Replace the email with your own:
@@ -68,7 +68,7 @@ The app is hosted with GitHub Pages and uses Supabase for authentication, data s
    ```
 
 7. Ask the rest of the group to register from the app. Their accounts remain pending and cannot access pool data until you approve them in **Admin desk → Review registrations**. Approval adds them to existing seasons.
-8. In **Authentication → URL Configuration**, set **Site URL** to the deployed GitHub Pages app URL (including `/boundary-club/`) and add that same URL to allowed redirect URLs. Remove `http://localhost:8000` and other local URLs from the production allowlist. Signup does not set a per-request redirect; Supabase uses the Site URL, so confirmation links return to the hosted app.
+8. In **Authentication → URL Configuration**, set **Site URL** to the deployed GitHub Pages app URL (including `/boundary-club/`) and add that same URL to allowed redirect URLs for future authentication links. Remove `http://localhost:8000` and other local URLs from the production allowlist. Signup sends no confirmation email or redirect.
 
 The SQL creates a pending profile and registration request on sign-up. Approved users are added to each existing season; when you create a new season, approved profiles are enrolled automatically.
 

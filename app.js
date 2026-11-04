@@ -46,7 +46,7 @@ function syncAuth() {
   $('header-avatar').textContent = initials(state.profile?.display_name || state.session?.user.email);
   $('user-role').textContent = state.profile?.role === 'admin' ? 'Pool admin' : approved ? 'Pool member' : 'Awaiting approval';
   if (state.profile?.approval_status === 'rejected') { $('approval-title').textContent = 'Registration not approved'; $('approval-copy').textContent = 'Your request was not approved. Contact the pool admin if you think this is a mistake.'; }
-  else { $('approval-title').textContent = 'Your request is pending approval'; $('approval-copy').textContent = 'Your email is confirmed and your registration is in the admin desk. You can sign in and play as soon as the admin approves your account.'; }
+  else { $('approval-title').textContent = 'Your request is pending approval'; $('approval-copy').textContent = 'Your registration is in the admin desk. You can play as soon as the admin approves your account.'; }
   document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', state.profile?.role !== 'admin' || !approved));
 }
 async function loadData() {
@@ -215,7 +215,7 @@ async function register(event) {
   });
   button.disabled = false;
   if (error) { $('auth-error').textContent = error.message; $('auth-error').classList.remove('hidden'); return; }
-  $('auth-success').textContent = data.session ? 'Your request is pending approval. Sign in to check its status.' : 'Confirm your email using Supabase’s message. Then return to the app and sign in; your request will be waiting for admin approval.';
+  $('auth-success').textContent = data.session ? 'Your request is pending approval. You can play as soon as the admin approves your account.' : 'Your request was received. Check your email to confirm your address, then sign in and wait for admin approval.';
   $('auth-success').classList.remove('hidden'); $('register-form').reset();
 }
 async function reviewRegistration(userId, approved) {
