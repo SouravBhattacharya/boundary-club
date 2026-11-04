@@ -5,6 +5,11 @@ const configured = SUPABASE_URL.startsWith('https://') && SUPABASE_ANON_KEY.leng
 const supabase = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 const state = { session: null, profile: null, seasons: [], season: null, members: [], matches: [], picks: [], ledger: [], profiles: [], registrationRequests: [], view: 'home', selectedSeasonId: null, activeMatch: null, activeSettle: null };
 const $ = (id) => document.getElementById(id);
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('#refresh-registrations')) return;
+  event.preventDefault();
+  refreshRegistrations();
+}, true);
 const money = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(Number(n || 0) / 100);
 const rupees = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n || 0));
 const initials = (s) => (s || '?').trim().split(/\s+/).slice(0, 2).map(x => x[0]).join('').toUpperCase();
@@ -163,6 +168,7 @@ function renderAdmin() {
 }
 async function refreshRegistrations() {
   const button = $('refresh-registrations'); button.disabled = true;
+  notice('Refreshing registration requests…', 'info');
   try {
     const { data, error } = await supabase.from('registration_requests').select('*').order('created_at', { ascending: true });
     if (error) throw error;
@@ -288,7 +294,6 @@ $('show-register').addEventListener('click', () => setAuthMode('register')); $('
 $('toggle-password').addEventListener('click', () => { const input = $('password'); input.type = input.type === 'password' ? 'text' : 'password'; $('toggle-password').textContent = input.type === 'password' ? 'Show' : 'Hide'; });
 $('sign-out').addEventListener('click', async () => { await supabase?.auth.signOut(); });
 $('header-sign-out').addEventListener('click', async () => { await supabase?.auth.signOut(); });
-$('refresh-registrations').addEventListener('click', refreshRegistrations);
 $('season-form').addEventListener('submit', createSeason); $('match-form').addEventListener('submit', addMatch); $('edit-form').addEventListener('submit', saveEdit);
 $('season-select').addEventListener('change', async (event) => { state.selectedSeasonId = event.target.value; try { await refresh(); } catch (e) { fail(e); } });
 $('export-csv').addEventListener('click', exportCsv); $('history-export').addEventListener('click', exportCsv);
