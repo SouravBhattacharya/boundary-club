@@ -4,21 +4,50 @@ A private, mobile-friendly prediction pool for a small group of friends. The fro
 
 ## Current status
 
-This is a local starter app. It has **not** been connected to GitHub or Supabase and is not online. No account credentials are included. Create a Supabase project, run `supabase/schema.sql`, configure `config.js`, then publish this folder to a public GitHub repository with Pages enabled.
+The app is hosted with GitHub Pages and uses Supabase for authentication, data storage, and settlement. Keep `config.js` limited to the public project URL and publishable/anon key; never add a Supabase service-role key or passwords.
 
 ## Features in this starter
 
 - Email/password registration. New accounts stay pending until an admin approves or rejects them; pending accounts cannot read seasons, picks, or standings.
 - League, playoff, and final stakes configured per season.
 - Fixture entry with India Standard Time; picks close 30 minutes before the scheduled start, enforced by Postgres.
-- Picks are hidden from everyone, including pool admins, before lock and visible to approved season members after lock. Admin privileges do not bypass pick privacy.
+- Picks and live team counts are hidden from everyone, including the admin, before lock. Admin privileges do not bypass pick privacy.
 - Leaderboard, per-user match history, CSV export, and admin result entry.
 - Integer-paise settlement, deterministic distribution of leftover paise, and idempotent result settlement. Result entry is currently manual; official result sync and auditable corrections are planned and require validation against the official source when the next season starts.
-- Refunds for abandoned/tied/no-result matches, a match where every submitted pick is wrong, and a match where nobody submitted a pick. A missed pick is charged when at least one submitted pick correctly predicts the winner.
+- Registration requires admin approval. The admin also plays under the same pick and visibility rules as other participants.
 
-## Settlement behavior for no submissions
+## Playing rules
 
-If nobody submits a pick, every participant is charged the configured stake and the total pool is divided equally among all participants. Each person gets their stake back and has zero P/L. This matches the result when everyone picks the same side: regardless of whether that side wins, each person gets their stake back.
+### Players and season stakes
+
+- Only registered players approved by the admin can participate. The admin is also a player and follows the same voting and visibility rules as everyone else.
+- Before the season starts, the group sets a fixed stake for each match type: league, qualifier/eliminator, and final. The app shows the stake before a player submits a pick.
+
+### Voting window and privacy
+
+- Players can pick one of the two teams for an open match and may change that pick until voting closes.
+- Voting closes **30 minutes before the scheduled match start**. This is intended to be before the toss. The database enforces the deadline, even if a browser page is stale.
+- After the deadline, picks cannot be changed. If the schedule changes, the admin can update the fixture details.
+- Before voting closes, nobody can see another player's pick or the vote count for either team—not even the admin. Each player can see their own pick. After voting closes, picks become visible to approved season members.
+
+### Pool payout and missed picks
+
+- For a match with at least one submitted pick correctly predicting the winning team, every season member's stake is included in the pool. The pool is divided equally among the correct predictors. Players who picked incorrectly or missed the deadline lose their stake for that match.
+- Calculations use integer paise. Any indivisible remainder is assigned in stable user-ID order.
+- If you miss the deadline and at least one submitted pick is correct, your stake is treated as lost and included in the pool.
+
+### Refunds and no-result matches
+
+- If nobody submits a pick, everyone gets their stake back and has zero profit or loss for that match.
+- If all submitted picks choose the losing team, submitted picks are refunded and missed picks are not charged. Everyone breaks even for that match.
+- If a match is abandoned, tied, or has no result, submitted picks are refunded and missed picks are not charged.
+- No amount carries over to another match.
+
+### Results, records, and fixtures
+
+- The admin records the official match result and settles the match. The app then updates each player's profit/loss and the season standings. Match history shows picks and settlement details after the result is recorded.
+- Fixtures and start times should follow the official IPL schedule. The admin may add or edit fixtures if needed and can enter a result manually.
+- Fixture and result updates are currently manual. Automatic official schedule/result lookup and an in-app audited result-correction flow are not yet implemented.
 
 ## 1. Create Supabase project
 
@@ -66,17 +95,9 @@ Then open `http://localhost:8000`. The Supabase URL/key must be configured first
 1. Sign in as the admin.
 2. Open **Admin desk → Season & stakes**. Use a name such as `IPL 2027`; default stakes are ₹50 league, ₹100 qualifier/eliminator, and ₹200 final.
 3. Once the official IPL/BCCI fixture list is announced, add each fixture and verify its scheduled start time against the official source. Enter times in IST. The app does not auto-scrape Google results or invent fixtures.
-4. Picks open until exactly 30 minutes before the scheduled start. The database rejects late submissions and edits even if a browser page is stale.
+4. Apply the voting, privacy, payout, and refund rules in **Playing rules** above.
 5. Review new accounts in **Admin desk → Review registrations** and approve only your friends.
 6. After a match, open **Admin desk → Record official result** and settle it once. Results should be checked against an official IPL/BCCI report before settlement.
-
-## Accounting rules implemented
-
-- For normal settled matches with at least one correct submitted pick, every season member has the match stake. A correct picker's payout is the whole pool divided equally among correct pickers; missed and incorrect picks lose their stake.
-- Calculations use integer paise. Extra paise are assigned to correct pickers in stable user-ID order.
-- For a void/no-result match, submitted picks are refunded and missed picks are not charged.
-- If there are submitted picks but no correct pick, submitted picks are refunded and missed-pick defaults are waived. No carryover is created.
-- If nobody submits a pick, everyone is charged and refunded the stake, resulting in zero P/L for every participant. No carryover is created.
 
 ## Data and backups
 
