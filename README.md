@@ -102,10 +102,12 @@ GitHub Pages on GitHub Free requires the Pages repository to be public. The app'
 Run the browser-independent unit tests with a current Node.js installation:
 
 ```powershell
-node --test
+node --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-branches=80 --test-coverage-include=app-core.js --test-coverage-include=app-data.js
 ```
 
 These tests cover the pick cutoff, IST-to-UTC fixture conversion, pre-lock pick privacy data selection, duplicate-pick handling, registration status counting, HTML escaping, and mocked Supabase registration-request reads. Database policies and settlement SQL require integration tests against a Supabase/Postgres instance and are not exercised by this command.
+
+The GitHub Pages workflow runs the tests before the site build on every push to `main` and on manual workflow runs. It requires at least 80% line, function, and branch coverage for the testable rule and data-access modules. A failing test or missed threshold prevents deployment.
 
 ## Project files
 
