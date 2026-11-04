@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+import { escapeHtml, isPickWindowOpen, lockAt, parseIndiaDateTime, pendingRegistrationCount, visiblePicks } from './app-core.js';
 
 const configured = SUPABASE_URL.startsWith('https://') && SUPABASE_ANON_KEY.length > 20 && !SUPABASE_URL.includes('YOUR_');
 const supabase = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -14,9 +15,8 @@ const money = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currenc
 const rupees = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n || 0));
 const initials = (s) => (s || '?').trim().split(/\s+/).slice(0, 2).map(x => x[0]).join('').toUpperCase();
 const teamCode = (s) => (s || '??').split(/\s+/).map(x => x[0]).join('').slice(0, 3).toUpperCase();
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const lockAt = (m) => new Date(new Date(m.starts_at).getTime() - 30 * 60 * 1000);
-const isOpen = (m) => m.status === 'scheduled' && Date.now() < lockAt(m).getTime();
+const esc = escapeHtml;
+const isOpen = (m) => isPickWindowOpen(m);
 const memberName = (id) => state.profiles.find(p => p.id === id)?.display_name || 'Pool member';
 
 function notice(message, type = 'info') {
@@ -27,10 +27,7 @@ function fail(error, fallback = 'Something went wrong. Please try again.') {
   console.error(error); notice(error?.message || fallback, 'error');
 }
 function indiaDate(date, options = {}) { return new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', ...options }).format(new Date(date)); }
-function parseIndiaInput(value) {
-  const [d, t] = value.split('T'); const [y, m, day] = d.split('-').map(Number); const [h, min] = t.split(':').map(Number);
-  return new Date(Date.UTC(y, m - 1, day, h - 5, min - 30)).toISOString();
-}
+const parseIndiaInput = parseIndiaDateTime;
 function setView(view) {
   state.view = view;
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -84,7 +81,7 @@ async function loadData() {
       if (lockedPickRes.error) throw lockedPickRes.error;
       lockedPickRows = lockedPickRes.data || [];
     }
-    state.picks = [...new Map([...(ownPickRes.data || []), ...lockedPickRows].map(p => [p.id, p])).values()];
+    state.picks = visiblePicks({ ownPicks: ownPickRes.data || [], lockedPicks: lockedPickRows });
     state.ledger = ledgerRes.data || []; state.profiles = peopleRes.data || [];
   } else if (state.profile.role === 'admin') {
     const { data, error } = await supabase.from('profiles').select('id,display_name,role,approval_status'); if (error) throw error; state.profiles = data || [];
@@ -174,7 +171,7 @@ async function refreshRegistrations() {
     if (error) throw error;
     state.registrationRequests = data || [];
     renderAdmin();
-    const pendingCount = state.registrationRequests.filter(r => r.status === 'pending').length;
+    const pendingCount = pendingRegistrationCount(state.registrationRequests);
     notice(pendingCount ? `Loaded ${pendingCount} pending request${pendingCount === 1 ? '' : 's'}.` : `No pending requests returned for ${state.session?.user.email} from ${new URL(SUPABASE_URL).host}.`, pendingCount ? 'success' : 'info');
   } catch (error) { fail(error, 'Could not load registration requests.'); }
   finally { button.disabled = false; }

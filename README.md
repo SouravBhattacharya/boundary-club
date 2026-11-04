@@ -97,6 +97,16 @@ GitHub Pages on GitHub Free requires the Pages repository to be public. The app'
 - Supabase Free has usage quotas, no downloadable database backups, and may pause projects after a week of low activity. Restore a paused project from the Supabase dashboard. For anything users rely on, take periodic CSV exports or choose a plan with appropriate backup/availability support.
 - Never rely on the browser UI alone for access control; the schema enables row-level security and server-side deadline checks.
 
+## Tests
+
+Run the browser-independent unit tests with a current Node.js installation:
+
+```powershell
+node --test
+```
+
+These tests cover the pick cutoff, IST-to-UTC fixture conversion, pre-lock pick privacy data selection, duplicate-pick handling, registration status counting, and HTML escaping. Database policies and settlement SQL require integration tests against a Supabase/Postgres instance and are not exercised by this command.
+
 ## Project files
 
 - `index.html` — app structure and views
