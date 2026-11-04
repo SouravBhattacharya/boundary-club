@@ -45,6 +45,7 @@ function syncAuth() {
   $('user-avatar').textContent = initials(state.profile?.display_name || state.session?.user.email);
   $('header-avatar').textContent = initials(state.profile?.display_name || state.session?.user.email);
   $('user-role').textContent = state.profile?.role === 'admin' ? 'Pool admin' : approved ? 'Pool member' : 'Awaiting approval';
+  $('header-sign-out').classList.toggle('hidden', !signedIn);
   if (state.profile?.approval_status === 'rejected') { $('approval-title').textContent = 'Registration not approved'; $('approval-copy').textContent = 'Your request was not approved. Contact the pool admin if you think this is a mistake.'; }
   else { $('approval-title').textContent = 'Your request is pending approval'; $('approval-copy').textContent = 'Your registration is in the admin desk. You can play as soon as the admin approves your account.'; }
   document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', state.profile?.role !== 'admin' || !approved));
@@ -160,6 +161,18 @@ function renderAdmin() {
   $('fixture-list').innerHTML = state.matches.length ? state.matches.map(m => `<div class="settle-row"><div><strong>${esc(m.team_a)} vs ${esc(m.team_b)}</strong><span>${indiaDate(m.starts_at, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })} IST · ${esc(typeName(m.category))} · ${esc(m.status)}</span></div><button class="button button-secondary" data-edit="${m.id}">Edit fixture</button></div>`).join('') : '<div class="empty-state compact">No fixtures have been added.</div>';
   $('settle-list').innerHTML = state.matches.filter(m => m.status === 'scheduled' && !isOpen(m)).length ? state.matches.filter(m => m.status === 'scheduled' && !isOpen(m)).map(m => `<div class="settle-row"><div><strong>${esc(m.team_a)} vs ${esc(m.team_b)}</strong><span>${indiaDate(m.starts_at, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })} IST · ${esc(typeName(m.category))}</span></div><button class="button button-secondary" data-settle="${m.id}">Record result →</button></div>`).join('') : '<div class="empty-state compact">No matches waiting for a result.</div>';
 }
+async function refreshRegistrations() {
+  const button = $('refresh-registrations'); button.disabled = true;
+  try {
+    const { data, error } = await supabase.from('registration_requests').select('*').order('created_at', { ascending: true });
+    if (error) throw error;
+    state.registrationRequests = data || [];
+    renderAdmin();
+    const pendingCount = state.registrationRequests.filter(r => r.status === 'pending').length;
+    notice(pendingCount ? `Loaded ${pendingCount} pending request${pendingCount === 1 ? '' : 's'}.` : `No pending requests returned for ${state.session?.user.email} from ${new URL(SUPABASE_URL).host}.`, pendingCount ? 'success' : 'info');
+  } catch (error) { fail(error, 'Could not load registration requests.'); }
+  finally { button.disabled = false; }
+}
 function showPick(matchId) {
   const m = state.matches.find(x => x.id === matchId); if (!m || !isOpen(m)) return notice('Voting has closed for this match.', 'error');
   state.activeMatch = m;
@@ -274,6 +287,8 @@ $('login-form').addEventListener('submit', login); $('register-form').addEventLi
 $('show-register').addEventListener('click', () => setAuthMode('register')); $('show-login').addEventListener('click', () => setAuthMode('login')); $('pending-sign-out').addEventListener('click', async () => { await supabase?.auth.signOut(); });
 $('toggle-password').addEventListener('click', () => { const input = $('password'); input.type = input.type === 'password' ? 'text' : 'password'; $('toggle-password').textContent = input.type === 'password' ? 'Show' : 'Hide'; });
 $('sign-out').addEventListener('click', async () => { await supabase?.auth.signOut(); });
+$('header-sign-out').addEventListener('click', async () => { await supabase?.auth.signOut(); });
+$('refresh-registrations').addEventListener('click', refreshRegistrations);
 $('season-form').addEventListener('submit', createSeason); $('match-form').addEventListener('submit', addMatch); $('edit-form').addEventListener('submit', saveEdit);
 $('season-select').addEventListener('change', async (event) => { state.selectedSeasonId = event.target.value; try { await refresh(); } catch (e) { fail(e); } });
 $('export-csv').addEventListener('click', exportCsv); $('history-export').addEventListener('click', exportCsv);
