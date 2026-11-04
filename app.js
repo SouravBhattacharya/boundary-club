@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import { escapeHtml, isPickWindowOpen, lockAt, parseIndiaDateTime, pendingRegistrationCount, visiblePicks } from './app-core.js';
+import { fetchRegistrationRequests } from './app-data.js';
 
 const configured = SUPABASE_URL.startsWith('https://') && SUPABASE_ANON_KEY.length > 20 && !SUPABASE_URL.includes('YOUR_');
 const supabase = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -87,8 +88,7 @@ async function loadData() {
     const { data, error } = await supabase.from('profiles').select('id,display_name,role,approval_status'); if (error) throw error; state.profiles = data || [];
   }
   if (state.profile.role === 'admin') {
-    const { data, error } = await supabase.from('registration_requests').select('*').order('created_at', { ascending: true });
-    if (error) throw error; state.registrationRequests = data || [];
+    state.registrationRequests = await fetchRegistrationRequests(supabase);
   }
   const seasonSelect = $('season-select');
   seasonSelect.innerHTML = state.seasons.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
@@ -167,9 +167,7 @@ async function refreshRegistrations() {
   const button = $('refresh-registrations'); button.disabled = true;
   notice('Refreshing registration requests…', 'info');
   try {
-    const { data, error } = await supabase.from('registration_requests').select('*').order('created_at', { ascending: true });
-    if (error) throw error;
-    state.registrationRequests = data || [];
+    state.registrationRequests = await fetchRegistrationRequests(supabase);
     renderAdmin();
     const pendingCount = pendingRegistrationCount(state.registrationRequests);
     notice(pendingCount ? `Loaded ${pendingCount} pending request${pendingCount === 1 ? '' : 's'}.` : `No pending requests returned for ${state.session?.user.email} from ${new URL(SUPABASE_URL).host}.`, pendingCount ? 'success' : 'info');

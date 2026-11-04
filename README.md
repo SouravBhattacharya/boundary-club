@@ -105,7 +105,7 @@ Run the browser-independent unit tests with a current Node.js installation:
 node --test
 ```
 
-These tests cover the pick cutoff, IST-to-UTC fixture conversion, pre-lock pick privacy data selection, duplicate-pick handling, registration status counting, and HTML escaping. Database policies and settlement SQL require integration tests against a Supabase/Postgres instance and are not exercised by this command.
+These tests cover the pick cutoff, IST-to-UTC fixture conversion, pre-lock pick privacy data selection, duplicate-pick handling, registration status counting, HTML escaping, and mocked Supabase registration-request reads. Database policies and settlement SQL require integration tests against a Supabase/Postgres instance and are not exercised by this command.
 
 ## Project files
 
