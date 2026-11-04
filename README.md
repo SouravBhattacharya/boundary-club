@@ -11,7 +11,7 @@ This is a local starter app. It has **not** been connected to GitHub or Supabase
 - Email/password registration. New accounts stay pending until an admin approves or rejects them; pending accounts cannot read seasons, picks, or standings.
 - League, playoff, and final stakes configured per season.
 - Fixture entry with India Standard Time; picks close 30 minutes before the scheduled start, enforced by Postgres.
-- Picks are hidden from other participants before lock and visible after lock.
+- Picks are hidden from everyone, including pool admins, before lock and visible to approved season members after lock. Admin privileges do not bypass pick privacy.
 - Leaderboard, per-user match history, CSV export, and admin result entry.
 - Integer-paise settlement, deterministic distribution of leftover paise, and idempotent result settlement. Result entry is currently manual; official result sync and auditable corrections are planned and require validation against the official source when the next season starts.
 - Refunds for abandoned/tied/no-result matches, a match where every submitted pick is wrong, and a match where nobody submitted a pick. A missed pick is charged when at least one submitted pick correctly predicts the winner.

@@ -62,15 +62,23 @@ async function loadData() {
   state.season = state.seasons.find(s => s.id === state.selectedSeasonId) || state.seasons[0] || null;
   state.selectedSeasonId = state.season?.id || null;
   if (state.season) {
-    const [memberRes, matchRes, pickRes, ledgerRes, peopleRes] = await Promise.all([
+    const [memberRes, matchRes, ownPickRes, ledgerRes, peopleRes] = await Promise.all([
       supabase.from('season_members').select('user_id,season_id').eq('season_id', state.season.id),
       supabase.from('matches').select('*').eq('season_id', state.season.id).order('starts_at'),
-      supabase.from('predictions').select('id,match_id,user_id,predicted_team,updated_at'),
+      supabase.from('predictions').select('id,match_id,user_id,predicted_team,updated_at').eq('user_id', state.session.user.id),
       supabase.from('ledger_entries').select('*').eq('season_id', state.season.id),
       supabase.from('profiles').select('id,display_name,role,approval_status')
     ]);
-    for (const r of [memberRes, matchRes, pickRes, ledgerRes, peopleRes]) if (r.error) throw r.error;
-    state.members = memberRes.data || []; state.matches = matchRes.data || []; state.picks = pickRes.data || [];
+    for (const r of [memberRes, matchRes, ownPickRes, ledgerRes, peopleRes]) if (r.error) throw r.error;
+    state.members = memberRes.data || []; state.matches = matchRes.data || [];
+    const lockedMatchIds = state.matches.filter(m => !isOpen(m)).map(m => m.id);
+    let lockedPickRows = [];
+    if (lockedMatchIds.length) {
+      const lockedPickRes = await supabase.from('predictions').select('id,match_id,user_id,predicted_team,updated_at').in('match_id', lockedMatchIds);
+      if (lockedPickRes.error) throw lockedPickRes.error;
+      lockedPickRows = lockedPickRes.data || [];
+    }
+    state.picks = [...new Map([...(ownPickRes.data || []), ...lockedPickRows].map(p => [p.id, p])).values()];
     state.ledger = ledgerRes.data || []; state.profiles = peopleRes.data || [];
   } else if (state.profile.role === 'admin') {
     const { data, error } = await supabase.from('profiles').select('id,display_name,role,approval_status'); if (error) throw error; state.profiles = data || [];
@@ -279,7 +287,11 @@ document.addEventListener('click', (event) => {
   const result = event.target.closest('[data-result]'); if (result) { settle(result.dataset.result); return; }
   if (event.target.closest('[data-void-result]')) settle('void');
 });
-window.setInterval(() => { if (state.session && state.view === 'home') render(); }, 30000);
+window.setInterval(async () => {
+  if (!state.session) return;
+  try { await loadData(); render(); }
+  catch (error) { fail(error, 'Could not refresh pool data.'); }
+}, 30000);
 if (!supabase) {
   $('auth-view').classList.add('hidden'); $('app-view').classList.remove('hidden'); $('app-view').innerHTML = `<div class="auth-card setup-card"><span class="eyebrow">LOCAL SETUP</span><h2>Connect Supabase to begin</h2><p class="muted">Open <code>config.js</code> and add your Supabase project URL and publishable key. Then run the schema in <code>supabase/schema.sql</code>.</p><p class="muted">No credentials are stored in this project right now.</p></div>`;
 } else {

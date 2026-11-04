@@ -106,7 +106,6 @@ as $$
   select exists (
     select 1 from public.matches m
     where m.id = p_match_id and (
-      public.is_pool_admin() or
       public.is_season_member(m.season_id) and now() >= m.starts_at - interval '30 minutes'
     )
   );
@@ -170,6 +169,7 @@ revoke update on public.matches from anon, authenticated;
 grant update(team_a,team_b,category,starts_at) on public.matches to authenticated;
 
 drop policy if exists "members see own or locked picks" on public.predictions;
+drop policy if exists "members see own or locked picks; admins cannot bypass lock" on public.predictions;
 create policy "members see own or locked picks" on public.predictions for select to authenticated using (user_id = auth.uid() or public.can_view_match_picks(match_id));
 drop policy if exists "members create own timely pick" on public.predictions;
 create policy "members create own timely pick" on public.predictions for insert to authenticated with check (
