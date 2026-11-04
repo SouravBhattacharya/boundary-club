@@ -131,6 +131,7 @@ for each row execute procedure public.add_new_user();
 
 alter table public.profiles enable row level security;
 alter table public.registration_requests enable row level security;
+grant select on table public.registration_requests to authenticated;
 alter table public.seasons enable row level security;
 alter table public.season_members enable row level security;
 alter table public.matches enable row level security;
