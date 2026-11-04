@@ -68,7 +68,7 @@ The app is hosted with GitHub Pages and uses Supabase for authentication, data s
    ```
 
 7. Ask the rest of the group to register from the app. Their accounts remain pending and cannot access pool data until you approve them in **Admin desk → Review registrations**. Approval adds them to existing seasons.
-8. In **Authentication → URL Configuration**, set **Site URL** to the deployed GitHub Pages app URL (including `/boundary-club/`) and add that same URL to allowed redirect URLs for future authentication links. Remove `http://localhost:8000` and other local URLs from the production allowlist. Signup sends no confirmation email or redirect.
+8. In **Authentication → URL Configuration**, set **Site URL** to the deployed GitHub Pages app URL (`https://souravbhattacharya.github.io/boundary-club/`) and add that same URL to allowed redirect URLs for future authentication links. Remove any development URLs from the production allowlist. Signup sends no confirmation email or redirect.
 
 The SQL creates a pending profile and registration request on sign-up. Approved users are added to each existing season; when you create a new season, approved profiles are enrolled automatically.
 
@@ -81,14 +81,6 @@ GitHub Pages on GitHub Free requires the Pages repository to be public. The app'
 3. In repository **Settings → Pages**, choose **GitHub Actions** as the publishing source. The workflow at `.github/workflows/pages.yml` will publish the site on pushes to `main`.
 4. Wait for the Pages workflow to finish. Your URL will look like `https://YOUR-USERNAME.github.io/boundary-club/`.
 5. Add that URL to Supabase's allowed redirect URL list.
-
-You can also preview locally using Python's static server:
-
-```powershell
-python -m http.server 8000
-```
-
-Then open `http://localhost:8000`. The Supabase URL/key must be configured first for sign-in to work.
 
 ## 3. Start a season
 
